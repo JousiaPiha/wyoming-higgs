@@ -1,0 +1,45 @@
+[project]
+name = "wyoming-higgs"
+version = "0.1.0"
+description = "Wyoming protocol server for Higgs Audio TTS"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Jousiapiha" }
+]
+keywords = ["home-assistant", "higgs-audio", "tts", "voice-cloning", "wyoming"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "wyoming>=1.8,<2",
+]
+
+[project.scripts]
+wyoming-higgs = "wyoming_higgs.__main__:run"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+zeroconf = [
+    "wyoming[zeroconf]",
+]
+
+[tool.setuptools.packages.find]
+include = ["wyoming_higgs"]
+exclude = ["tests", "tests.*"]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
