@@ -132,6 +132,30 @@ def test_client_raises_helpful_error_for_http_failure(monkeypatch):
 
     with pytest.raises(
         HiggsApiError,
-        match="Higgs API request failed with HTTP 500: backend failed",
+        match=(
+            r"Higgs API request to http://higgs\.local:8000/v1/audio/speech "
+            "failed with HTTP 500: backend failed"
+        ),
+    ):
+        asyncio.run(client.synthesize("Text", "voice_a"))
+
+
+def test_client_connection_error_names_speech_url(monkeypatch):
+    def fake_urlopen(req, timeout):
+        raise error.URLError(ConnectionRefusedError(111, "Connection refused"))
+
+    monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
+    client = HiggsApiClient(
+        api_base_url="http://127.0.0.1:8000/v1",
+        model="higgs",
+        response_format="pcm",
+        sample_rate=24000,
+        sample_width=2,
+        channels=1,
+    )
+
+    with pytest.raises(
+        HiggsApiError,
+        match=r"Higgs API request to http://127\.0\.0\.1:8000/v1/audio/speech failed",
     ):
         asyncio.run(client.synthesize("Text", "voice_a"))

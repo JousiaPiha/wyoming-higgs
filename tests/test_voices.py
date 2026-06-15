@@ -1,6 +1,6 @@
 import json
 
-from wyoming_higgs.voices import VoicePreset, load_voice_presets
+from wyoming_higgs.voices import HIGGS_V3_LANGUAGE_CODES, VoicePreset, load_voice_presets
 
 
 def test_load_voice_presets_reads_sglang_config(tmp_path):
@@ -37,7 +37,7 @@ def test_load_voice_presets_adds_default_voice_when_config_is_missing(tmp_path):
         VoicePreset(
             name="my_clone",
             description="Higgs Audio voice preset my_clone",
-            language="en",
+            languages=HIGGS_V3_LANGUAGE_CODES,
         )
     ]
 
@@ -55,11 +55,42 @@ def test_load_voice_presets_can_use_directory_with_config_json(tmp_path):
         VoicePreset(
             name="fallback",
             description="Higgs Audio voice preset fallback",
-            language="en",
+            languages=HIGGS_V3_LANGUAGE_CODES,
         ),
         VoicePreset(
             name="voice_a",
             description="Voice clone preset voice_a: Reference text.",
-            language="en",
+            languages=HIGGS_V3_LANGUAGE_CODES,
         ),
+    ]
+
+
+def test_default_language_list_includes_higgs_v3_polished_and_usable_languages(tmp_path):
+    voices = load_voice_presets(
+        default_voice="my_clone",
+        preset_config=tmp_path / "missing.json",
+    )
+
+    languages = set(voices[0].languages)
+
+    assert len(voices[0].languages) == 102
+    for language in ("af", "ar", "en", "fi", "ja", "zh", "cy", "umb"):
+        assert language in languages
+
+
+def test_voice_config_can_override_languages(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"voice_a": {"languages": ["fi", "en"]}}),
+        encoding="utf-8",
+    )
+
+    voices = load_voice_presets(default_voice="voice_a", preset_config=config_path)
+
+    assert voices == [
+        VoicePreset(
+            name="voice_a",
+            description="Voice clone preset voice_a",
+            languages=("fi", "en"),
+        )
     ]

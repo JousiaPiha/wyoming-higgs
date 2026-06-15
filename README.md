@@ -1,6 +1,6 @@
 # Wyoming Higgs
 
-Wyoming protocol server for Higgs Audio TTS. It lets Home Assistant use Higgs Audio through the Wyoming integration and select configured Higgs voice clone presets as TTS voices.
+Wyoming protocol server for Higgs Audio TTS. It lets Home Assistant use Higgs Audio v3 through the Wyoming integration and select configured Higgs voice clone presets as TTS voices.
 
 This project is intentionally lightweight: it does not load Higgs models itself. Run Higgs Audio separately with an OpenAI-compatible `/v1/audio/speech` endpoint, then run this adapter as the Wyoming server.
 
@@ -56,9 +56,17 @@ Run the Wyoming server on TCP port `10200`:
 script/run \
   --uri 'tcp://0.0.0.0:10200' \
   --api-base-url 'http://127.0.0.1:8000/v1' \
-  --model 'higgs-audio-v2-generation-3B-base' \
+  --model 'higgs-audio-v3-tts' \
   --voice 'my_voice' \
   --voice-presets-dir /path/to/voice-presets
+```
+
+Use the `--model` value that your Higgs speech server exposes. For example, a hosted v3 API may use `higgs-audio-v3-tts`, while a self-hosted SGLang server may use the name you passed with its served-model-name option.
+
+By default, every voice preset is advertised with the Higgs v3 language set. To restrict the advertised languages, repeat `--language`:
+
+```bash
+script/run --voice my_voice --language en --language fi
 ```
 
 If you enable zeroconf while binding to all interfaces, the adapter lets Wyoming auto-detect the advertised IP:

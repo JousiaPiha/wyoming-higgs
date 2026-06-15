@@ -58,7 +58,7 @@ class HiggsApiClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
         req = request.Request(
-            _speech_url(self.api_base_url),
+            speech_url := _speech_url(self.api_base_url),
             data=body_bytes,
             headers=headers,
             method="POST",
@@ -71,10 +71,14 @@ class HiggsApiClient:
         except error.HTTPError as err:
             response_body = err.read().decode("utf-8", errors="replace")
             raise HiggsApiError(
-                f"Higgs API request failed with HTTP {err.code}: {response_body}"
+                f"Higgs API request to {speech_url} failed with HTTP {err.code}: {response_body}"
             ) from err
         except error.URLError as err:
-            raise HiggsApiError(f"Higgs API request failed: {err.reason}") from err
+            raise HiggsApiError(
+                f"Higgs API request to {speech_url} failed: {err.reason}. "
+                "Check that the Higgs OpenAI-compatible speech server is running "
+                "and reachable from this machine."
+            ) from err
 
         if _is_wav_response(self.response_format, content_type, response_body):
             return _decode_wav(response_body)

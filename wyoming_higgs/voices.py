@@ -7,6 +7,111 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+HIGGS_V3_LANGUAGE_CODES = (
+    "af",
+    "ar",
+    "hy",
+    "as",
+    "ast",
+    "az",
+    "ba",
+    "eu",
+    "be",
+    "bn",
+    "bs",
+    "bg",
+    "ca",
+    "ceb",
+    "ckb",
+    "zh",
+    "hr",
+    "cs",
+    "da",
+    "nl",
+    "mhr",
+    "en",
+    "eo",
+    "et",
+    "fi",
+    "fr",
+    "gl",
+    "ka",
+    "de",
+    "el",
+    "gu",
+    "ht",
+    "ha",
+    "he",
+    "hi",
+    "hu",
+    "id",
+    "it",
+    "ja",
+    "jv",
+    "kn",
+    "kk",
+    "ko",
+    "rw",
+    "ky",
+    "lv",
+    "ln",
+    "lt",
+    "luo",
+    "mk",
+    "ms",
+    "ml",
+    "mt",
+    "mi",
+    "mr",
+    "mn",
+    "ne",
+    "no",
+    "oc",
+    "fa",
+    "pl",
+    "pt",
+    "ro",
+    "ru",
+    "nso",
+    "sr",
+    "sn",
+    "sk",
+    "sl",
+    "es",
+    "sw",
+    "sv",
+    "tl",
+    "tg",
+    "ta",
+    "te",
+    "th",
+    "tr",
+    "uk",
+    "ur",
+    "ug",
+    "uz",
+    "vi",
+    "xh",
+    "zu",
+    "sq",
+    "ny",
+    "pa",
+    "lg",
+    "is",
+    "ga",
+    "kab",
+    "kea",
+    "kam",
+    "la",
+    "lb",
+    "om",
+    "ps",
+    "sd",
+    "so",
+    "umb",
+    "cy",
+)
+
 
 @dataclass(frozen=True)
 class VoicePreset:
@@ -14,13 +119,13 @@ class VoicePreset:
 
     name: str
     description: str
-    language: str = "en"
+    languages: tuple[str, ...] = HIGGS_V3_LANGUAGE_CODES
 
 
 def load_voice_presets(
     default_voice: str,
     preset_config: Optional[Path] = None,
-    language: str = "en",
+    languages: tuple[str, ...] = HIGGS_V3_LANGUAGE_CODES,
 ) -> list[VoicePreset]:
     """Load Higgs voice presets from a SGLang/Higgs config file."""
     voices: list[VoicePreset] = []
@@ -43,7 +148,7 @@ def load_voice_presets(
                 VoicePreset(
                     name=voice_name,
                     description=_describe_voice(voice_name, voice_config),
-                    language=str(voice_config.get("language", language)),
+                    languages=_get_languages(voice_config, languages),
                 )
             )
 
@@ -53,7 +158,7 @@ def load_voice_presets(
             VoicePreset(
                 name=default_voice,
                 description=f"Higgs Audio voice preset {default_voice}",
-                language=language,
+                languages=languages,
             ),
         )
 
@@ -82,3 +187,26 @@ def _describe_voice(voice_name: str, voice_config: dict[str, Any]) -> str:
         return f"Voice clone preset {voice_name} ({audio_file})"
 
     return f"Voice clone preset {voice_name}"
+
+
+def _get_languages(
+    voice_config: dict[str, Any],
+    default_languages: tuple[str, ...],
+) -> tuple[str, ...]:
+    languages = voice_config.get("languages")
+    if languages is not None:
+        if not isinstance(languages, list) or not all(
+            isinstance(language, str) for language in languages
+        ):
+            raise ValueError("'languages' must be a list of strings")
+
+        return tuple(languages)
+
+    language = voice_config.get("language")
+    if language is not None:
+        if not isinstance(language, str):
+            raise ValueError("'language' must be a string")
+
+        return (language,)
+
+    return default_languages

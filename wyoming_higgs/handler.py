@@ -115,7 +115,7 @@ class HiggsEventHandler(AsyncEventHandler):
 
         if voice is not None and voice.language:
             for preset in self.voices:
-                if preset.language == voice.language:
+                if voice.language in preset.languages:
                     return preset.name
 
         return self.cli_args.default_voice

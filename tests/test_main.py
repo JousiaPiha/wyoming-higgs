@@ -1,14 +1,14 @@
 from wyoming.info import Info
 
 from wyoming_higgs.__main__ import build_wyoming_info, resolve_zeroconf_host
-from wyoming_higgs.voices import VoicePreset
+from wyoming_higgs.voices import HIGGS_V3_LANGUAGE_CODES, VoicePreset
 
 
 def test_build_wyoming_info_lists_higgs_clone_voices():
     info = build_wyoming_info(
         voices=[
-            VoicePreset("belinda", "Belinda clone", "en"),
-            VoicePreset("mabel", "Mabel clone", "en"),
+            VoicePreset("belinda", "Belinda clone", HIGGS_V3_LANGUAGE_CODES),
+            VoicePreset("mabel", "Mabel clone", ("fi", "en")),
         ],
         version="1.2.3",
     )
@@ -22,6 +22,8 @@ def test_build_wyoming_info_lists_higgs_clone_voices():
     assert program.supports_synthesize_streaming is False
     assert [voice.name for voice in program.voices] == ["belinda", "mabel"]
     assert program.voices[0].description == "Belinda clone"
+    assert program.voices[0].languages == list(HIGGS_V3_LANGUAGE_CODES)
+    assert program.voices[1].languages == ["fi", "en"]
 
 
 def test_resolve_zeroconf_host_uses_auto_detection_for_wildcard_binds():

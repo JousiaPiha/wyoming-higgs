@@ -16,7 +16,7 @@ from wyoming.server import AsyncServer, AsyncTcpServer
 from . import __version__
 from .client import HiggsApiClient
 from .handler import HiggsEventHandler
-from .voices import VoicePreset, load_voice_presets
+from .voices import HIGGS_V3_LANGUAGE_CODES, VoicePreset, load_voice_presets
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def build_wyoming_info(voices: list[VoicePreset], version: str = __version__) ->
                         attribution=attribution,
                         installed=True,
                         version=None,
-                        languages=[voice.language],
+                        languages=list(voice.languages),
                     )
                     for voice in voices
                 ],
@@ -80,7 +80,7 @@ async def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="higgs-audio-v2-generation-3B-base",
+        default="higgs-audio-v3-tts",
         help="Higgs model name sent to the speech API",
     )
     parser.add_argument(
@@ -98,8 +98,12 @@ async def main() -> None:
     )
     parser.add_argument(
         "--language",
-        default="en",
-        help="Language code advertised for configured voices",
+        action="append",
+        dest="languages",
+        help=(
+            "Language code advertised for configured voices. "
+            "Can be repeated. Defaults to the Higgs v3 language list."
+        ),
     )
     parser.add_argument(
         "--response-format",
@@ -141,10 +145,11 @@ async def main() -> None:
         format=args.log_format,
     )
 
+    languages = tuple(args.languages) if args.languages else HIGGS_V3_LANGUAGE_CODES
     voices = load_voice_presets(
         default_voice=args.default_voice,
         preset_config=args.voice_preset_config,
-        language=args.language,
+        languages=languages,
     )
     wyoming_info = build_wyoming_info(voices)
     client = HiggsApiClient(

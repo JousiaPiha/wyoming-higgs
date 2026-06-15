@@ -15,7 +15,7 @@ from wyoming.tts import (
 
 from wyoming_higgs.client import SynthesizedAudio
 from wyoming_higgs.handler import HiggsEventHandler
-from wyoming_higgs.voices import VoicePreset
+from wyoming_higgs.voices import HIGGS_V3_LANGUAGE_CODES, VoicePreset
 
 
 class FakeClient:
@@ -52,8 +52,8 @@ def make_handler():
         wyoming_info=Info(),
         client=client,
         voices=[
-            VoicePreset("default_voice", "Default voice", "en"),
-            VoicePreset("belinda", "Belinda voice", "en"),
+            VoicePreset("default_voice", "Default voice", HIGGS_V3_LANGUAGE_CODES),
+            VoicePreset("belinda", "Belinda voice", HIGGS_V3_LANGUAGE_CODES),
         ],
         cli_args=SimpleNamespace(default_voice="default_voice", samples_per_chunk=2),
     )
@@ -66,8 +66,8 @@ def make_language_handler():
         wyoming_info=Info(),
         client=client,
         voices=[
-            VoicePreset("english_voice", "English voice", "en"),
-            VoicePreset("finnish_voice", "Finnish voice", "fi"),
+            VoicePreset("english_voice", "English voice", ("en",)),
+            VoicePreset("finnish_voice", "Finnish voice", ("fi",)),
         ],
         cli_args=SimpleNamespace(default_voice="english_voice", samples_per_chunk=2),
     )
