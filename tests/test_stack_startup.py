@@ -41,7 +41,15 @@ def test_run_stack_script_uses_user_defaults():
     assert "HIGGS_MODEL_PATH=\"${HIGGS_MODEL_PATH:-bosonai/higgs-audio-v3-tts-4b}\"" in script
     assert "WYOMING_URI=\"${WYOMING_URI:-tcp://0.0.0.0:10200}\"" in script
     assert "SGL_OMNI_BIN=\"${SGL_OMNI_BIN:-$DIR/.venv-sglang/bin/sgl-omni}\"" in script
+    assert "HIGGS_MEM_FRACTION_STATIC=\"${HIGGS_MEM_FRACTION_STATIC:-0.35}\"" in script
+    assert "HIGGS_MAX_RUNNING_REQUESTS=\"${HIGGS_MAX_RUNNING_REQUESTS:-1}\"" in script
+    assert "HIGGS_CUDA_GRAPH_MAX_BS=\"${HIGGS_CUDA_GRAPH_MAX_BS:-1}\"" in script
+    assert "HIGGS_CHUNKED_PREFILL_SIZE=\"${HIGGS_CHUNKED_PREFILL_SIZE:-2048}\"" in script
     assert "--allowed-local-media-path" in script
+    assert "stages.2.factory_args.server_args_overrides.mem_fraction_static" in script
+    assert "stages.2.factory_args.server_args_overrides.max_running_requests" in script
+    assert "stages.2.factory_args.server_args_overrides.cuda_graph_max_bs" in script
+    assert "stages.2.factory_args.server_args_overrides.chunked_prefill_size" in script
     assert "--response-format" in script
     assert "wav" in script
 

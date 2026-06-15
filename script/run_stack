@@ -13,6 +13,10 @@ HIGGS_API_BASE_URL="${HIGGS_API_BASE_URL:-http://$HIGGS_HOST:$HIGGS_PORT/v1}"
 WYOMING_URI="${WYOMING_URI:-tcp://0.0.0.0:10200}"
 WYOMING_MODEL="${WYOMING_MODEL:-}"
 WYOMING_RESPONSE_FORMAT="${WYOMING_RESPONSE_FORMAT:-wav}"
+HIGGS_MEM_FRACTION_STATIC="${HIGGS_MEM_FRACTION_STATIC:-0.35}"
+HIGGS_MAX_RUNNING_REQUESTS="${HIGGS_MAX_RUNNING_REQUESTS:-1}"
+HIGGS_CUDA_GRAPH_MAX_BS="${HIGGS_CUDA_GRAPH_MAX_BS:-1}"
+HIGGS_CHUNKED_PREFILL_SIZE="${HIGGS_CHUNKED_PREFILL_SIZE:-2048}"
 SGL_OMNI_BIN="${SGL_OMNI_BIN:-$DIR/.venv-sglang/bin/sgl-omni}"
 LOG_DIR="${LOG_DIR:-$DIR/logs}"
 SGLANG_LOG="$LOG_DIR/sglang-omni.log"
@@ -62,11 +66,16 @@ if port_is_open; then
   echo "Higgs server already listening on $HIGGS_HOST:$HIGGS_PORT"
 else
   echo "Starting Higgs server on $HIGGS_HOST:$HIGGS_PORT"
+  echo "Higgs SGLang memory: mem_fraction_static=$HIGGS_MEM_FRACTION_STATIC max_running_requests=$HIGGS_MAX_RUNNING_REQUESTS cuda_graph_max_bs=$HIGGS_CUDA_GRAPH_MAX_BS chunked_prefill_size=$HIGGS_CHUNKED_PREFILL_SIZE"
   "$SGL_OMNI_BIN" serve \
     --model-path "$HIGGS_MODEL_PATH" \
     --allowed-local-media-path "$HIGGS_ALLOWED_LOCAL_MEDIA_PATH" \
     --host "$HIGGS_HOST" \
     --port "$HIGGS_PORT" \
+    stages.2.factory_args.server_args_overrides.mem_fraction_static "$HIGGS_MEM_FRACTION_STATIC" \
+    stages.2.factory_args.server_args_overrides.max_running_requests "$HIGGS_MAX_RUNNING_REQUESTS" \
+    stages.2.factory_args.server_args_overrides.cuda_graph_max_bs "$HIGGS_CUDA_GRAPH_MAX_BS" \
+    stages.2.factory_args.server_args_overrides.chunked_prefill_size "$HIGGS_CHUNKED_PREFILL_SIZE" \
     >"$SGLANG_LOG" 2>&1 &
   sglang_pid="$!"
 

@@ -136,6 +136,10 @@ HIGGS_MODEL_PATH=bosonai/higgs-audio-v3-tts-4b
 HIGGS_API_BASE_URL=http://127.0.0.1:8000/v1
 WYOMING_URI=tcp://0.0.0.0:10200
 WYOMING_RESPONSE_FORMAT=wav
+HIGGS_MEM_FRACTION_STATIC=0.35
+HIGGS_MAX_RUNNING_REQUESTS=1
+HIGGS_CUDA_GRAPH_MAX_BS=1
+HIGGS_CHUNKED_PREFILL_SIZE=2048
 ```
 
 Override any setting with environment variables:
@@ -146,6 +150,13 @@ VOICE_PRESETS_DIR=/home/jousia/Applications/wyoming-higgs/voice-presets \
 WYOMING_URI='tcp://0.0.0.0:10200' \
 script/run_stack
 ```
+
+The SGLang-Omni Higgs pipeline defaults are tuned for benchmark throughput and
+reserve a large static GPU memory pool. `script/run_stack` overrides the Higgs
+`tts_engine` stage for Home Assistant usage so it does not reserve most of a
+large GPU by default. If the backend runs out of memory during startup or a long
+voice reference needs more prompt room, raise `HIGGS_MEM_FRACTION_STATIC` or
+`HIGGS_CHUNKED_PREFILL_SIZE`.
 
 SGLang-Omni logs are written to `logs/sglang-omni.log`.
 
