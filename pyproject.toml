@@ -1,6 +1,6 @@
 [project]
 name = "wyoming-higgs"
-version = "0.1.1"
+version = "0.2.0"
 description = "Wyoming protocol server for Higgs Audio TTS"
 readme = "README.md"
 requires-python = ">=3.10"

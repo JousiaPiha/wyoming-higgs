@@ -6,7 +6,7 @@ This project is intentionally lightweight: it does not load Higgs models itself.
 
 ## Voice Cloning
 
-Wyoming and Home Assistant do not send reference audio with every TTS request. To use a cloned voice, configure the voice preset on the Higgs backend and expose the same preset name here.
+Wyoming and Home Assistant do not send reference audio with every TTS request. To use a cloned voice with Higgs v3, configure the reference audio and transcript in `wyoming-higgs`; the adapter sends them to Higgs as v3 `references`.
 
 Create a voice preset directory:
 
@@ -21,19 +21,66 @@ voice-presets/
 ```json
 {
   "my_voice": {
+    "text": "The exact words spoken in my_voice.wav.",
+    "audio_path": "my_voice.wav"
+  }
+}
+```
+
+The older v2-style keys also work:
+
+```json
+{
+  "my_voice": {
     "transcript": "The exact words spoken in my_voice.wav.",
     "audio_file": "my_voice.wav"
   }
 }
 ```
 
-Start your Higgs backend with that preset directory. With the local Higgs vLLM image documented in the reference repo, the important flag is:
+`wyoming-higgs` advertises `my_voice` to Home Assistant. When Home Assistant selects that voice, the adapter calls Higgs with:
 
-```bash
---voice-presets-dir /path/to/voice-presets
+```json
+{
+  "input": "...",
+  "references": [
+    {
+      "audio_path": "/absolute/path/to/my_voice.wav",
+      "text": "The exact words spoken in my_voice.wav."
+    }
+  ]
+}
 ```
 
-The backend owns the actual cloning. `wyoming-higgs` advertises `my_voice` to Home Assistant and sends `"voice": "my_voice"` to Higgs for synthesis.
+Supplying the exact reference transcript materially improves clone quality.
+
+## Start Higgs v3
+
+`wyoming-higgs` is not the model server. Start an OpenAI-compatible Higgs v3 speech server first. With SGLang-Omni, the documented shape is:
+
+```bash
+sgl-omni serve \
+  --model-path bosonai/higgs-audio-v3-tts-4b \
+  --allowed-local-media-path /path/to/voice-presets \
+  --port 8000
+```
+
+The `--allowed-local-media-path` value must include the directory containing your reference `.wav` files, otherwise the Higgs server may reject local audio paths.
+
+Check the backend directly before starting Home Assistant:
+
+```bash
+curl -X POST 'http://127.0.0.1:8000/v1/audio/speech' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "input": "Hello, this is a Higgs test.",
+    "references": [{
+      "audio_path": "/path/to/voice-presets/my_voice.wav",
+      "text": "The exact words spoken in my_voice.wav."
+    }]
+  }' \
+  --output /tmp/higgs-test.wav
+```
 
 ## Install
 
@@ -62,6 +109,7 @@ script/run \
 ```
 
 Use the `--model` value that your Higgs speech server exposes. For example, a hosted v3 API may use `higgs-audio-v3-tts`, while a self-hosted SGLang server may use the name you passed with its served-model-name option.
+If your self-hosted SGLang server rejects a `model` field, pass an empty value: `--model ''`.
 
 By default, every voice preset is advertised with the Higgs v3 language set. To restrict the advertised languages, repeat `--language`:
 
@@ -101,7 +149,7 @@ script/run --api-base-url 'https://api.example.com/v1' --api-key "$BOSON_API_KEY
 
 ## Home Assistant
 
-1. Start the Higgs backend and confirm its `/v1/audio/speech` endpoint works.
+1. Start the Higgs backend and confirm its `/v1/audio/speech` endpoint works with `curl`.
 2. Start `wyoming-higgs` with `--uri 'tcp://0.0.0.0:10200'`.
 3. In Home Assistant, add the Wyoming Protocol integration.
 4. Set host to the machine running `wyoming-higgs` and port to `10200`.
@@ -119,6 +167,6 @@ The tests mock the Higgs speech API and do not need a GPU or running Higgs serve
 
 ## Current Limitations
 
-- Clone reference audio must be configured on the Higgs backend.
+- Clone reference audio must be readable by the Higgs backend. For SGLang-Omni, allow it with `--allowed-local-media-path`.
 - The adapter supports `pcm` and `wav` speech responses. MP3 decoding is not included.
 - Wyoming text streaming requests are accepted, buffered, and synthesized as one Higgs request when the stream stops.

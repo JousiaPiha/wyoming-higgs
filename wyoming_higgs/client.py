@@ -26,6 +26,21 @@ class SynthesizedAudio:
 
 
 @dataclass(frozen=True)
+class HiggsReference:
+    """Reference audio and transcript for Higgs v3 voice cloning."""
+
+    audio_path: str
+    text: str | None = None
+
+    def to_dict(self) -> dict[str, str]:
+        data = {"audio_path": self.audio_path}
+        if self.text:
+            data["text"] = self.text
+
+        return data
+
+
+@dataclass(frozen=True)
 class HiggsApiClient:
     """OpenAI-compatible speech API client."""
 
@@ -38,17 +53,36 @@ class HiggsApiClient:
     api_key: str | None = None
     timeout: float = 300.0
 
-    async def synthesize(self, text: str, voice: str) -> SynthesizedAudio:
+    async def synthesize(
+        self,
+        text: str,
+        voice: str,
+        reference: HiggsReference | None = None,
+    ) -> SynthesizedAudio:
         """Synthesize text with a Higgs voice preset."""
-        return await asyncio.to_thread(self._synthesize_blocking, text, voice)
+        return await asyncio.to_thread(
+            self._synthesize_blocking,
+            text,
+            voice,
+            reference,
+        )
 
-    def _synthesize_blocking(self, text: str, voice: str) -> SynthesizedAudio:
+    def _synthesize_blocking(
+        self,
+        text: str,
+        voice: str,
+        reference: HiggsReference | None,
+    ) -> SynthesizedAudio:
         body = {
-            "model": self.model,
             "input": text,
             "voice": voice,
             "response_format": self.response_format,
         }
+        if self.model:
+            body["model"] = self.model
+        if reference is not None:
+            body["references"] = [reference.to_dict()]
+
         body_bytes = json.dumps(body).encode("utf-8")
         headers = {
             "Content-Type": "application/json",

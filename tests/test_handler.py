@@ -13,7 +13,7 @@ from wyoming.tts import (
     SynthesizeVoice,
 )
 
-from wyoming_higgs.client import SynthesizedAudio
+from wyoming_higgs.client import HiggsReference, SynthesizedAudio
 from wyoming_higgs.handler import HiggsEventHandler
 from wyoming_higgs.voices import HIGGS_V3_LANGUAGE_CODES, VoicePreset
 
@@ -23,8 +23,8 @@ class FakeClient:
         self.calls = []
         self.fail_next = False
 
-    async def synthesize(self, text, voice):
-        self.calls.append((text, voice))
+    async def synthesize(self, text, voice, reference=None):
+        self.calls.append((text, voice, reference))
         if self.fail_next:
             self.fail_next = False
             raise RuntimeError("backend failed")
@@ -53,7 +53,13 @@ def make_handler():
         client=client,
         voices=[
             VoicePreset("default_voice", "Default voice", HIGGS_V3_LANGUAGE_CODES),
-            VoicePreset("belinda", "Belinda voice", HIGGS_V3_LANGUAGE_CODES),
+            VoicePreset(
+                "belinda",
+                "Belinda voice",
+                HIGGS_V3_LANGUAGE_CODES,
+                reference_audio_path="/voices/belinda.wav",
+                reference_text="Reference words.",
+            ),
         ],
         cli_args=SimpleNamespace(default_voice="default_voice", samples_per_chunk=2),
     )
@@ -95,7 +101,16 @@ async def test_synthesize_uses_selected_voice_and_chunks_audio():
         ).event()
     )
 
-    assert client.calls == [("Hello.", "belinda")]
+    assert client.calls == [
+        (
+            "Hello.",
+            "belinda",
+            HiggsReference(
+                audio_path="/voices/belinda.wav",
+                text="Reference words.",
+            ),
+        )
+    ]
     assert AudioStart.is_type(handler.events[0].type)
     start = AudioStart.from_event(handler.events[0])
     assert (start.rate, start.width, start.channels) == (24000, 2, 1)
@@ -116,7 +131,7 @@ async def test_synthesize_uses_speaker_as_voice_fallback():
         ).event()
     )
 
-    assert client.calls == [("Hello.", "belinda")]
+    assert client.calls[0][0:2] == ("Hello.", "belinda")
 
 
 @pytest.mark.asyncio
@@ -130,7 +145,7 @@ async def test_synthesize_ignores_unknown_speaker_fallback():
         ).event()
     )
 
-    assert client.calls == [("Hello.", "belinda")]
+    assert client.calls[0][0:2] == ("Hello.", "belinda")
 
 
 @pytest.mark.asyncio
@@ -144,7 +159,7 @@ async def test_synthesize_language_request_uses_matching_voice():
         ).event()
     )
 
-    assert client.calls == [("Hei.", "finnish_voice")]
+    assert client.calls[0][0:2] == ("Hei.", "finnish_voice")
 
 
 @pytest.mark.asyncio
@@ -156,7 +171,7 @@ async def test_streaming_text_is_accumulated_and_acknowledged():
     await handler.handle_event(SynthesizeChunk(text="stream.").event())
     await handler.handle_event(SynthesizeStop().event())
 
-    assert client.calls == [("Hello stream.", "belinda")]
+    assert client.calls[0][0:2] == ("Hello stream.", "belinda")
 
 
 @pytest.mark.asyncio
@@ -170,8 +185,15 @@ async def test_streaming_error_resets_stream_state():
     await handler.handle_event(Synthesize(text="This should work.").event())
 
     assert client.calls == [
-        ("This fails.", "belinda"),
-        ("This should work.", "default_voice"),
+        (
+            "This fails.",
+            "belinda",
+            HiggsReference(
+                audio_path="/voices/belinda.wav",
+                text="Reference words.",
+            ),
+        ),
+        ("This should work.", "default_voice", None),
     ]
     assert any(Error.is_type(event.type) for event in handler.events)
     assert AudioStop.is_type(handler.events[-1].type)
@@ -187,4 +209,4 @@ async def test_streaming_ignores_compatibility_synthesize_event():
     await handler.handle_event(SynthesizeChunk(text="stream.").event())
     await handler.handle_event(SynthesizeStop().event())
 
-    assert client.calls == [("Hello stream.", "belinda")]
+    assert client.calls[0][0:2] == ("Hello stream.", "belinda")

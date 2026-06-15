@@ -120,6 +120,8 @@ class VoicePreset:
     name: str
     description: str
     languages: tuple[str, ...] = HIGGS_V3_LANGUAGE_CODES
+    reference_audio_path: str | Path | None = None
+    reference_text: str | None = None
 
 
 def load_voice_presets(
@@ -149,6 +151,11 @@ def load_voice_presets(
                     name=voice_name,
                     description=_describe_voice(voice_name, voice_config),
                     languages=_get_languages(voice_config, languages),
+                    reference_audio_path=_get_reference_audio_path(
+                        config_path,
+                        voice_config,
+                    ),
+                    reference_text=_get_reference_text(voice_config),
                 )
             )
 
@@ -210,3 +217,32 @@ def _get_languages(
         return (language,)
 
     return default_languages
+
+
+def _get_reference_audio_path(
+    config_path: Path,
+    voice_config: dict[str, Any],
+) -> Path | None:
+    audio_path = voice_config.get("audio_path", voice_config.get("audio_file"))
+    if audio_path is None:
+        return None
+
+    if not isinstance(audio_path, str):
+        raise ValueError("'audio_path'/'audio_file' must be a string")
+
+    path = Path(audio_path)
+    if not path.is_absolute():
+        path = config_path.parent / path
+
+    return path
+
+
+def _get_reference_text(voice_config: dict[str, Any]) -> str | None:
+    text = voice_config.get("text", voice_config.get("transcript"))
+    if text is None:
+        return None
+
+    if not isinstance(text, str):
+        raise ValueError("'text'/'transcript' must be a string")
+
+    return text.strip()

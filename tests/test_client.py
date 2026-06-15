@@ -7,7 +7,7 @@ from urllib import error
 import pytest
 
 import wyoming_higgs.client as client_module
-from wyoming_higgs.client import HiggsApiClient, HiggsApiError, SynthesizedAudio
+from wyoming_higgs.client import HiggsApiClient, HiggsApiError, HiggsReference, SynthesizedAudio
 
 
 class FakeResponse:
@@ -25,9 +25,13 @@ class FakeResponse:
         return self.body
 
 
+class CapturedRequests(list):
+    response_body = b"\x01\x00\x02\x00"
+
+
 @pytest.fixture()
 def speech_requests(monkeypatch):
-    captured = []
+    captured = CapturedRequests()
 
     def fake_urlopen(req, timeout):
         captured.append(
@@ -38,7 +42,7 @@ def speech_requests(monkeypatch):
                 "timeout": timeout,
             }
         )
-        return FakeResponse(b"\x01\x00\x02\x00")
+        return FakeResponse(captured.response_body)
 
     monkeypatch.setattr(client_module.request, "urlopen", fake_urlopen)
     return captured
@@ -77,6 +81,53 @@ def test_client_posts_openai_speech_request_and_returns_pcm(speech_requests):
             "timeout": 42.0,
         }
     ]
+
+
+def test_client_sends_v3_references_when_available(speech_requests):
+    speech_requests.response_body = _make_wav_bytes()
+    client = HiggsApiClient(
+        api_base_url="http://higgs.local:8000/v1",
+        model="higgs-audio-v3-tts",
+        response_format="wav",
+        sample_rate=24000,
+        sample_width=2,
+        channels=1,
+    )
+
+    asyncio.run(
+        client.synthesize(
+            "Hello there.",
+            "my_voice",
+            reference=HiggsReference(
+                audio_path="/voices/my_voice.wav",
+                text="These are the reference words.",
+            ),
+        )
+    )
+
+    assert speech_requests[0]["body"] == {
+        "model": "higgs-audio-v3-tts",
+        "input": "Hello there.",
+        "voice": "my_voice",
+        "response_format": "wav",
+        "references": [
+            {
+                "audio_path": "/voices/my_voice.wav",
+                "text": "These are the reference words.",
+            }
+        ],
+    }
+
+
+def _make_wav_bytes():
+    wav_buffer = BytesIO()
+    with wave.open(wav_buffer, "wb") as wav_file:
+        wav_file.setframerate(24000)
+        wav_file.setsampwidth(2)
+        wav_file.setnchannels(1)
+        wav_file.writeframes(b"\x01\x00\x02\x00")
+
+    return wav_buffer.getvalue()
 
 
 def test_client_decodes_wav_response(monkeypatch):

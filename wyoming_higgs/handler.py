@@ -20,7 +20,7 @@ from wyoming.tts import (
     SynthesizeVoice,
 )
 
-from .client import HiggsApiClient, SynthesizedAudio
+from .client import HiggsApiClient, HiggsReference, SynthesizedAudio
 from .voices import VoicePreset
 
 
@@ -44,6 +44,7 @@ class HiggsEventHandler(AsyncEventHandler):
         self.client = client
         self.voices = voices
         self.voice_names = {voice.name for voice in voices}
+        self.voices_by_name = {voice.name: voice for voice in voices}
         self.cli_args = cli_args
         self._is_streaming = False
         self._stream_voice: Optional[SynthesizeVoice] = None
@@ -103,7 +104,11 @@ class HiggsEventHandler(AsyncEventHandler):
         voice: Optional[SynthesizeVoice],
     ) -> None:
         resolved_voice = self._resolve_voice(voice)
-        audio = await self.client.synthesize(text, resolved_voice)
+        audio = await self.client.synthesize(
+            text,
+            resolved_voice,
+            reference=self._get_reference(resolved_voice),
+        )
         await self._write_audio(audio)
 
     def _resolve_voice(self, voice: Optional[SynthesizeVoice]) -> str:
@@ -119,6 +124,16 @@ class HiggsEventHandler(AsyncEventHandler):
                     return preset.name
 
         return self.cli_args.default_voice
+
+    def _get_reference(self, voice_name: str) -> HiggsReference | None:
+        preset = self.voices_by_name.get(voice_name)
+        if preset is None or preset.reference_audio_path is None:
+            return None
+
+        return HiggsReference(
+            audio_path=str(preset.reference_audio_path),
+            text=preset.reference_text,
+        )
 
     async def _write_audio(self, audio: SynthesizedAudio) -> None:
         await self.write_event(

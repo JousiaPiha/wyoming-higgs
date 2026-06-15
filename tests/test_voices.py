@@ -25,6 +25,8 @@ def test_load_voice_presets_reads_sglang_config(tmp_path):
 
     assert [voice.name for voice in voices] == ["belinda", "broom_salesman"]
     assert voices[0].description == "Voice clone preset belinda: Twas the night before my birthday. Hooray!"
+    assert voices[0].reference_audio_path == config_path.parent / "belinda.wav"
+    assert voices[0].reference_text == "Twas the night before my birthday. Hooray!"
 
 
 def test_load_voice_presets_adds_default_voice_when_config_is_missing(tmp_path):
@@ -61,6 +63,8 @@ def test_load_voice_presets_can_use_directory_with_config_json(tmp_path):
             name="voice_a",
             description="Voice clone preset voice_a: Reference text.",
             languages=HIGGS_V3_LANGUAGE_CODES,
+            reference_audio_path=tmp_path / "voice_a.wav",
+            reference_text="Reference text.",
         ),
     ]
 
@@ -94,3 +98,16 @@ def test_voice_config_can_override_languages(tmp_path):
             languages=("fi", "en"),
         )
     ]
+
+
+def test_voice_config_accepts_v3_text_alias_for_reference_transcript(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"voice_a": {"text": "Reference text.", "audio_path": "voice_a.wav"}}),
+        encoding="utf-8",
+    )
+
+    voices = load_voice_presets(default_voice="voice_a", preset_config=config_path)
+
+    assert voices[0].reference_audio_path == tmp_path / "voice_a.wav"
+    assert voices[0].reference_text == "Reference text."

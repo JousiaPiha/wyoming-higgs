@@ -1,6 +1,6 @@
 {
   "my_voice": {
-    "transcript": "Replace this with the exact words spoken in my_voice.wav.",
-    "audio_file": "my_voice.wav"
+    "text": "Replace this with the exact words spoken in my_voice.wav.",
+    "audio_path": "my_voice.wav"
   }
 }
