@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON="${PYTHON:-python3}"
+WYOMING_VENV="${WYOMING_VENV:-$DIR/.venv}"
+SGLANG_VENV="${SGLANG_VENV:-$DIR/.venv-sglang}"
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Missing 'uv'. Install it first, for example:" >&2
+  echo "  python3 -m pip install uv" >&2
+  exit 1
+fi
+
+if [ ! -d "$WYOMING_VENV" ]; then
+  "$PYTHON" -m venv "$WYOMING_VENV"
+fi
+
+"$WYOMING_VENV/bin/python" -m pip install -r "$DIR/requirements-stack.txt"
+
+if [ ! -d "$SGLANG_VENV" ]; then
+  uv venv "$SGLANG_VENV"
+fi
+
+uv pip install --python "$SGLANG_VENV/bin/python" \
+  -r "$DIR/requirements-sglang-omni.txt"
+
+echo "Wyoming adapter: $WYOMING_VENV"
+echo "SGLang-Omni: $SGLANG_VENV"

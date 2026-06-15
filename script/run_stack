@@ -13,7 +13,7 @@ HIGGS_API_BASE_URL="${HIGGS_API_BASE_URL:-http://$HIGGS_HOST:$HIGGS_PORT/v1}"
 WYOMING_URI="${WYOMING_URI:-tcp://0.0.0.0:10200}"
 WYOMING_MODEL="${WYOMING_MODEL:-}"
 WYOMING_RESPONSE_FORMAT="${WYOMING_RESPONSE_FORMAT:-wav}"
-SGL_OMNI_BIN="${SGL_OMNI_BIN:-sgl-omni}"
+SGL_OMNI_BIN="${SGL_OMNI_BIN:-$DIR/.venv-sglang/bin/sgl-omni}"
 LOG_DIR="${LOG_DIR:-$DIR/logs}"
 SGLANG_LOG="$LOG_DIR/sglang-omni.log"
 
@@ -26,7 +26,7 @@ fi
 
 if ! command -v "$SGL_OMNI_BIN" >/dev/null 2>&1; then
   echo "Missing '$SGL_OMNI_BIN'. Install the full stack with:" >&2
-  echo "  python3 -m pip install -r requirements-stack.txt" >&2
+  echo "  script/setup_stack" >&2
   exit 1
 fi
 

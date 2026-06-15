@@ -32,9 +32,6 @@ dev = [
 zeroconf = [
     "wyoming[zeroconf]",
 ]
-stack = [
-    "sglang-omni @ git+https://github.com/sgl-project/sglang-omni.git",
-]
 
 [tool.setuptools.packages.find]
 include = ["wyoming_higgs"]
