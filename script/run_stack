@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+VOICE="${VOICE:-my_voice}"
+VOICE_PRESETS_DIR="${VOICE_PRESETS_DIR:-$DIR/voice-presets}"
+HIGGS_MODEL_PATH="${HIGGS_MODEL_PATH:-bosonai/higgs-audio-v3-tts-4b}"
+HIGGS_HOST="${HIGGS_HOST:-127.0.0.1}"
+HIGGS_PORT="${HIGGS_PORT:-8000}"
+HIGGS_ALLOWED_LOCAL_MEDIA_PATH="${HIGGS_ALLOWED_LOCAL_MEDIA_PATH:-$VOICE_PRESETS_DIR}"
+HIGGS_API_BASE_URL="${HIGGS_API_BASE_URL:-http://$HIGGS_HOST:$HIGGS_PORT/v1}"
+WYOMING_URI="${WYOMING_URI:-tcp://0.0.0.0:10200}"
+WYOMING_MODEL="${WYOMING_MODEL:-}"
+WYOMING_RESPONSE_FORMAT="${WYOMING_RESPONSE_FORMAT:-wav}"
+SGL_OMNI_BIN="${SGL_OMNI_BIN:-sgl-omni}"
+LOG_DIR="${LOG_DIR:-$DIR/logs}"
+SGLANG_LOG="$LOG_DIR/sglang-omni.log"
+
+mkdir -p "$LOG_DIR"
+
+if [ ! -d "$VOICE_PRESETS_DIR" ]; then
+  echo "Voice presets directory does not exist: $VOICE_PRESETS_DIR" >&2
+  exit 1
+fi
+
+if ! command -v "$SGL_OMNI_BIN" >/dev/null 2>&1; then
+  echo "Missing '$SGL_OMNI_BIN'. Install the full stack with:" >&2
+  echo "  python3 -m pip install -r requirements-stack.txt" >&2
+  exit 1
+fi
+
+port_is_open() {
+  python3 - "$HIGGS_HOST" "$HIGGS_PORT" <<'PY'
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.settimeout(1)
+    sys.exit(0 if sock.connect_ex((host, port)) == 0 else 1)
+PY
+}
+
+wait_for_port() {
+  local retries="${HIGGS_STARTUP_RETRIES:-180}"
+  local delay="${HIGGS_STARTUP_DELAY:-2}"
+
+  for _ in $(seq 1 "$retries"); do
+    if port_is_open; then
+      return 0
+    fi
+    sleep "$delay"
+  done
+
+  return 1
+}
+
+sglang_pid=""
+if port_is_open; then
+  echo "Higgs server already listening on $HIGGS_HOST:$HIGGS_PORT"
+else
+  echo "Starting Higgs server on $HIGGS_HOST:$HIGGS_PORT"
+  "$SGL_OMNI_BIN" serve \
+    --model-path "$HIGGS_MODEL_PATH" \
+    --allowed-local-media-path "$HIGGS_ALLOWED_LOCAL_MEDIA_PATH" \
+    --host "$HIGGS_HOST" \
+    --port "$HIGGS_PORT" \
+    >"$SGLANG_LOG" 2>&1 &
+  sglang_pid="$!"
+
+  echo "Waiting for Higgs server. Logs: $SGLANG_LOG"
+  if ! wait_for_port; then
+    echo "Higgs server did not start on $HIGGS_HOST:$HIGGS_PORT" >&2
+    echo "Last log lines:" >&2
+    tail -n 80 "$SGLANG_LOG" >&2 || true
+    exit 1
+  fi
+fi
+
+cleanup() {
+  if [ -n "$sglang_pid" ] && kill -0 "$sglang_pid" >/dev/null 2>&1; then
+    kill "$sglang_pid" >/dev/null 2>&1 || true
+    wait "$sglang_pid" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+echo "Starting Wyoming Higgs on $WYOMING_URI using voice '$VOICE'"
+"$DIR/script/run" \
+  --uri "$WYOMING_URI" \
+  --api-base-url "$HIGGS_API_BASE_URL" \
+  --model "$WYOMING_MODEL" \
+  --response-format "$WYOMING_RESPONSE_FORMAT" \
+  --voice "$VOICE" \
+  --voice-presets-dir "$VOICE_PRESETS_DIR"

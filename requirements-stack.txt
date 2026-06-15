@@ -1,0 +1,2 @@
+-e .
+sglang-omni @ git+https://github.com/sgl-project/sglang-omni.git

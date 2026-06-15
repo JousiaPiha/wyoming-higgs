@@ -89,6 +89,12 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
+To install the full local stack, including SGLang-Omni from source:
+
+```bash
+.venv/bin/python -m pip install -r requirements-stack.txt
+```
+
 For local development against the sibling Wyoming repo in this workspace:
 
 ```bash
@@ -96,6 +102,34 @@ For local development against the sibling Wyoming repo in this workspace:
 ```
 
 ## Run
+
+To start both the Higgs v3 server and Wyoming adapter with the default local settings:
+
+```bash
+script/run_stack
+```
+
+The defaults are:
+
+```text
+VOICE=my_voice
+VOICE_PRESETS_DIR=./voice-presets
+HIGGS_MODEL_PATH=bosonai/higgs-audio-v3-tts-4b
+HIGGS_API_BASE_URL=http://127.0.0.1:8000/v1
+WYOMING_URI=tcp://0.0.0.0:10200
+WYOMING_RESPONSE_FORMAT=wav
+```
+
+Override any setting with environment variables:
+
+```bash
+VOICE=my_voice \
+VOICE_PRESETS_DIR=/home/jousia/Applications/wyoming-higgs/voice-presets \
+WYOMING_URI='tcp://0.0.0.0:10200' \
+script/run_stack
+```
+
+SGLang-Omni logs are written to `logs/sglang-omni.log`.
 
 Run the Wyoming server on TCP port `10200`:
 
