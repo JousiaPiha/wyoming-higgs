@@ -8,7 +8,11 @@ SGLANG_VENV="${SGLANG_VENV:-$DIR/.venv-sglang}"
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "Missing 'uv'. Install it first, for example:" >&2
-  echo "  python3 -m pip install uv" >&2
+  echo "  pipx install uv" >&2
+  echo "or install it inside this project's virtualenv:" >&2
+  echo "  python3 -m venv .venv" >&2
+  echo "  source .venv/bin/activate" >&2
+  echo "  pip install uv" >&2
   exit 1
 fi
 
@@ -23,6 +27,7 @@ if [ ! -d "$SGLANG_VENV" ]; then
 fi
 
 uv pip install --python "$SGLANG_VENV/bin/python" \
+  --overrides "$DIR/requirements-sglang-overrides.txt" \
   -r "$DIR/requirements-sglang-omni.txt"
 
 echo "Wyoming adapter: $WYOMING_VENV"

@@ -19,6 +19,12 @@ def test_sglang_requirements_file_uses_uv_installable_source():
     assert "sglang-omni @ git+https://github.com/sgl-project/sglang-omni.git" in requirements
 
 
+def test_sglang_override_file_resolves_upstream_protobuf_conflict():
+    overrides = (ROOT / "requirements-sglang-overrides.txt").read_text(encoding="utf-8")
+
+    assert "protobuf>=6.31.1,<7.0.0" in overrides
+
+
 def test_pyproject_does_not_expose_broken_pip_stack_extra():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
@@ -47,4 +53,7 @@ def test_setup_stack_installs_sglang_omni_with_uv():
     assert os.access(script_path, os.X_OK)
     assert "uv venv \"$SGLANG_VENV\"" in script
     assert "uv pip install --python \"$SGLANG_VENV/bin/python\"" in script
+    assert "--overrides \"$DIR/requirements-sglang-overrides.txt\"" in script
     assert "-r \"$DIR/requirements-sglang-omni.txt\"" in script
+    assert "pipx install uv" in script
+    assert "python3 -m pip install uv" not in script

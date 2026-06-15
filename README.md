@@ -89,10 +89,20 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-To install the full local stack, install `uv` once and run the setup script:
+To install the full local stack, install `uv` once and run the setup script.
+On Debian/Ubuntu, do not install it into the system Python because PEP 668
+blocks system-wide pip installs. Use `pipx`:
 
 ```bash
-python3 -m pip install uv
+pipx install uv
+script/setup_stack
+```
+
+Or install `uv` inside this project's virtualenv:
+
+```bash
+source .venv/bin/activate
+pip install uv
 script/setup_stack
 ```
 
@@ -101,7 +111,7 @@ This creates two environments:
 - `.venv` for the lightweight Wyoming adapter
 - `.venv-sglang` for SGLang-Omni
 
-SGLang-Omni uses uv dependency overrides for its protobuf stack, so do not install `requirements-sglang-omni.txt` with pip.
+SGLang-Omni uses uv dependency overrides for its protobuf stack, so `script/setup_stack` passes `requirements-sglang-overrides.txt` to uv. Do not install `requirements-sglang-omni.txt` with pip.
 
 For local development against the sibling Wyoming repo in this workspace:
 
