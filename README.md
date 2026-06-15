@@ -111,7 +111,9 @@ script/run \
 Use the `--model` value that your Higgs speech server exposes. For example, a hosted v3 API may use `higgs-audio-v3-tts`, while a self-hosted SGLang server may use the name you passed with its served-model-name option.
 If your self-hosted SGLang server rejects a `model` field, pass an empty value: `--model ''`.
 
-By default, every voice preset is advertised with the Higgs v3 language set. To restrict the advertised languages, repeat `--language`:
+By default, every voice preset is advertised with the Higgs v3 language set plus common Home Assistant locale aliases such as `fi-FI`, `sv-SE`, `de-DE`, `fr-FR`, `en-US`, and `en-GB`. Home Assistant filters Wyoming voices by exact language key, so locale aliases are needed when your HA voice/pipeline language is not a base code like `en`.
+
+To restrict the advertised languages, repeat `--language`:
 
 ```bash
 script/run --voice my_voice --language en --language fi
